@@ -19,7 +19,7 @@ example_simple: example_simple.o $(objects)
 
 clean:
 	$(MAKE) --directory=firebuf clean
-	rm --force example_simple connection_afl *.o
+	rm --force example_simple connection_afl *.o *.a
 
 afl:
 	$(MAKE) clean
