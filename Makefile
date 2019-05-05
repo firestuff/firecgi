@@ -11,6 +11,7 @@ firecgi.a: $(objects)
 	ar rcs $@ $^
 
 example_simple: example_simple.o $(objects)
+	$(MAKE) --directory=firebuf
 	$(FIRE_CXX) $(FIRE_CXXFLAGS) -o $@ $+ firebuf/firebuf.a $(FIRE_LDLIBS)
 
 %.o: %.cc *.h Makefile
@@ -27,11 +28,12 @@ afl:
 afl_int: connection_afl
 
 connection_afl: connection_afl.o $(objects)
-	$(FIRE_CXX) $(FIRE_CXXFLAGS) -o $@ $+ $(FIRE_LDLIBS)
+	$(MAKE) --directory=firebuf
+	$(FIRE_CXX) $(FIRE_CXXFLAGS) -o $@ $+ firebuf/firebuf.a $(FIRE_LDLIBS)
 
 test: test_connection
 
-test_connection: connection_afl_afl
-	@echo "Running $$(ls afl_state/testcases | wc -l) tests"
-	for FILE in afl_state/testcases/*; do ./connection_afl < $$FILE; done
+test_connection: connection_afl
+	@echo "Running $$(ls testcases | wc -l) tests"
+	for FILE in testcases/*; do ./connection_afl < $$FILE; done
 	@printf '\033[0;32mALL TESTS PASSED\033[0m\n'

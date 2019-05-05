@@ -2,3 +2,4 @@
 *.a
 example_simple
 connection_afl
+findings
