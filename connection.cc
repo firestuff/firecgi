@@ -13,7 +13,7 @@ Connection::Connection(int sock, const sockaddr_in6& client_addr, const std::fun
 		: sock_(sock),
 		  callback_(callback),
 		  headers_(headers),
-		  buf_(sock, fastcgi_max_record_len) {
+		  buf_(sock, max_record_len) {
 	char client_addr_str[INET6_ADDRSTRLEN];
 	PCHECK(inet_ntop(AF_INET6, &client_addr.sin6_addr, client_addr_str, sizeof(client_addr_str)));
 
@@ -81,7 +81,7 @@ int Connection::Read() {
 					return sock_;
 				}
 
-				ConstBuffer param_buf(buf_.Read(header->ContentLength()), header->ContentLength());
+				firebuf::ConstBuffer param_buf(buf_.Read(header->ContentLength()), header->ContentLength());
 				while (param_buf.ReadMaxLen() > 0) {
 					const auto *param_header = param_buf.ReadObj<ParamHeader>();
 					if (!param_header) {

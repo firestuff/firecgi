@@ -1,0 +1,3 @@
+[submodule "firebuf"]
+	path = firebuf
+	url = git@github.com:firestuff/firebuf.git

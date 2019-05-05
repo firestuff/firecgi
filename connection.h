@@ -5,8 +5,9 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "firebuf/stream_buffer.h"
+
 #include "request.h"
-#include "stream_buffer.h"
 
 namespace firecgi {
 
@@ -25,7 +26,7 @@ class Connection {
 
 	uint64_t requests_ = 0;
 
-	StreamBuffer buf_;
+	firebuf::StreamBuffer buf_;
 
 	std::unique_ptr<Request> request_;
 };
