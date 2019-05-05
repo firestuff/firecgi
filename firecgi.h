@@ -4,7 +4,7 @@
 #include <memory>
 #include <unordered_set>
 
-#include "fastcgi_request.h"
+#include "request.h"
 
 namespace firecgi {
 
