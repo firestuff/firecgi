@@ -10,7 +10,8 @@ _firebuf:
 	$(MAKE) --directory=firebuf
 
 firecgi.a: $(objects) _firebuf
-	ar rcs $@ $(objects) $(addprefix firebuf/,$(shell ar t firebuf/firebuf.a))
+	ar x firebuf/firebuf.a
+	ar rcs $@ $(objects) $(shell ar t firebuf/firebuf.a)
 
 example_simple: example_simple.o firecgi.a
 	$(FIRE_CXX) $(FIRE_CXXFLAGS) -o $@ $+ $(FIRE_LDLIBS)
