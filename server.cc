@@ -6,7 +6,7 @@
 #include <sys/socket.h>
 #include <thread>
 
-#include "firecgi.h"
+#include "server.h"
 #include "connection.h"
 
 namespace firecgi {

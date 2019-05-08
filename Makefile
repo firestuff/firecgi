@@ -2,18 +2,20 @@ FIRE_CXX ?= clang++
 FIRE_CXXFLAGS ?= -O3 -std=gnu++2a -Wall -Werror
 FIRE_LDLIBS ?= -lgflags -lglog -lpthread
 
-all: firecgi.a example_simple
+all: firecgi.a firecgi.o example_simple
 
-objects = firecgi.o connection.o request.o parse.o
+objects = server.o connection.o request.o parse.o
 
-_firebuf:
+firebuf/firebuf.o:
 	$(MAKE) --directory=firebuf
 
-firecgi.a: $(objects) _firebuf
-	ar x firebuf/firebuf.a
-	ar rcs $@ $(objects) $(shell ar t firebuf/firebuf.a)
+firecgi.a: $(objects)
+	ar rcs $@ $(objects)
 
-example_simple: example_simple.o firecgi.a
+firecgi.o: $(objects) firebuf/firebuf.o
+	ld --relocatable --output=$@ $^
+
+example_simple: example_simple.o firecgi.o
 	$(FIRE_CXX) $(FIRE_CXXFLAGS) -o $@ $+ $(FIRE_LDLIBS)
 
 %.o: %.cc *.h Makefile
@@ -29,8 +31,7 @@ afl:
 
 afl_int: connection_afl
 
-connection_afl: connection_afl.o firecgi.a
-	$(MAKE) --directory=firebuf
+connection_afl: connection_afl.o firecgi.o
 	$(FIRE_CXX) $(FIRE_CXXFLAGS) -o $@ $+ $(FIRE_LDLIBS)
 
 test: test_connection

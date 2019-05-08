@@ -1,7 +1,7 @@
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
-#include "firecgi.h"
+#include "server.h"
 
 DEFINE_int32(port, 9000, "TCP port to bind");
 DEFINE_int32(threads, 1, "Number of server threads");
