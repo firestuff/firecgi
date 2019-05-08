@@ -10,10 +10,10 @@ firebuf/firebuf.o:
 	$(MAKE) --directory=firebuf
 
 firecgi.a: $(objects)
-	ar rcs $@ $(objects)
+	ar rcs $@ $^
 
 firecgi.o: $(objects) firebuf/firebuf.o
-	ld --relocatable --output=$@ $^
+	ld --relocatable --output=$@ $+
 
 example_simple: example_simple.o firecgi.o
 	$(FIRE_CXX) $(FIRE_CXXFLAGS) -o $@ $+ $(FIRE_LDLIBS)
