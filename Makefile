@@ -37,3 +37,7 @@ test_connection: connection_afl
 	@echo "Running $$(ls testcases | wc -l) tests"
 	for FILE in testcases/*; do ./connection_afl < $$FILE; done
 	@printf '\033[0;32mALL TESTS PASSED\033[0m\n'
+
+asan:
+	$(MAKE) clean
+	FIRE_CXXFLAGS="-O1 -g -fsanitize=address -fno-omit-frame-pointer -std=gnu++2a -Wall -Werror" $(MAKE) all

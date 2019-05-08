@@ -10,7 +10,7 @@ namespace firecgi {
 
 class Server {
   public:
-	Server(int port, const std::function<void(std::unique_ptr<Request>)>& callback, int threads=1, const std::unordered_set<std::string_view>& headers={});
+	Server(int port, const std::function<void(Request*)>& callback, int threads=1, const std::unordered_set<std::string_view>& headers={});
 	void Serve();
 
   private:
@@ -19,7 +19,7 @@ class Server {
 	void ServeInt();
 
 	const int port_;
-	const std::function<void(std::unique_ptr<Request>)> callback_;
+	const std::function<void(Request*)> callback_;
 	const int threads_;
 	const std::unordered_set<std::string_view> headers_;
 };

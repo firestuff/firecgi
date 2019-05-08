@@ -16,10 +16,17 @@ template<class T> void AppendVec(const T& obj, std::vector<iovec>* vec) {
 
 } // namespace
 
-Request::Request(uint16_t request_id, Connection* conn)
-		: request_id_(request_id),
-		  conn_(conn),
+Request::Request(Connection* conn)
+		: conn_(conn),
 		  out_buf_(max_record_len) {}
+
+void Request::NewRequest(uint16_t request_id) {
+	request_id_ = request_id;
+	params_.clear();
+	in_.clear();
+	out_buf_.Reset();
+	body_written_ = false;
+}
 
 uint16_t Request::RequestId() {
 	return request_id_;

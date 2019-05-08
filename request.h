@@ -12,7 +12,9 @@ class Connection;
 
 class Request {
   public:
-    Request(uint16_t request_id, Connection *conn);
+	Request(Connection *conn);
+
+	void NewRequest(uint16_t request_id);
 
 	uint16_t RequestId();
 
@@ -30,14 +32,14 @@ class Request {
 	Header OutputHeader();
 	iovec OutputVec();
 
-	const uint16_t request_id_;
 	Connection *conn_;
+	uint16_t request_id_ = 0;
 
 	std::unordered_map<std::string, std::string> params_;
 	std::string in_;
 
 	firebuf::Buffer out_buf_;
-	bool body_written_ = false;
+	bool body_written_;
 };
 
 } // namespace firecgi

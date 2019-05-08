@@ -9,11 +9,12 @@
 
 namespace firecgi {
 
-Connection::Connection(int sock, const sockaddr_in6& client_addr, const std::function<void(std::unique_ptr<Request>)>& callback, const std::unordered_set<std::string_view>& headers)
+Connection::Connection(int sock, const sockaddr_in6& client_addr, const std::function<void(Request*)>& callback, const std::unordered_set<std::string_view>& headers)
 		: sock_(sock),
 		  callback_(callback),
 		  headers_(headers),
-		  buf_(sock, max_record_len) {
+		  buf_(sock, max_record_len),
+		  request_(this) {
 	char client_addr_str[INET6_ADDRSTRLEN];
 	PCHECK(inet_ntop(AF_INET6, &client_addr.sin6_addr, client_addr_str, sizeof(client_addr_str)));
 
@@ -70,13 +71,13 @@ int Connection::Read() {
 					return sock_;
 				}
 
-				request_.reset(new Request(header->RequestId(), this));
+				request_.NewRequest(header->RequestId());
 			}
 			break;
 
 		  case 4:
 		    {
-				if (request_ == nullptr || header->RequestId() != request_->RequestId()) {
+				if (header->RequestId() != request_.RequestId()) {
 					LOG(ERROR) << "out of order FCGI_PARAMS record, or client is multiplexing requests (which we don't support)";
 					return sock_;
 				}
@@ -104,7 +105,7 @@ int Connection::Read() {
 					std::string_view value(value_buf, param_header->value_length);
 
 					if (headers_.find(key) != headers_.end()) {
-						request_->AddParam(key, value);
+						request_.AddParam(key, value);
 					}
 				}
 			}
@@ -112,7 +113,7 @@ int Connection::Read() {
 
 		  case 5:
 		  	{
-				if (request_ == nullptr || header->RequestId() != request_->RequestId()) {
+				if (header->RequestId() != request_.RequestId()) {
 					LOG(ERROR) << "out of order FCGI_STDIN record, or client is multiplexing requests (which we don't support)";
 					return sock_;
 				}
@@ -120,10 +121,10 @@ int Connection::Read() {
 				if (header->ContentLength() == 0) {
 					// Magic signal for completed request (mirrors the HTTP/1.1 protocol)
 					requests_++;
-					callback_(std::move(request_));
+					callback_(&request_);
 				} else {
 					std::string_view in(buf_.Read(header->ContentLength()), header->ContentLength());
-					request_->AddIn(in);
+					request_.AddIn(in);
 				}
 			}
 			break;

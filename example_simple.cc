@@ -10,7 +10,7 @@ int main(int argc, char *argv[]) {
 	google::InitGoogleLogging(argv[0]);
 	gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-	firecgi::Server server(FLAGS_port, [](std::unique_ptr<firecgi::Request> request) {
+	firecgi::Server server(FLAGS_port, [](firecgi::Request* request) {
 		request->WriteHeader("Content-Type", "text/plain");
 		request->WriteBody("Hello world");
 		request->End();

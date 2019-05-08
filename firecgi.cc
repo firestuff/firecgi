@@ -11,7 +11,7 @@
 
 namespace firecgi {
 
-Server::Server(int port, const std::function<void(std::unique_ptr<Request>)>& callback, int threads, const std::unordered_set<std::string_view>& headers)
+Server::Server(int port, const std::function<void(Request*)>& callback, int threads, const std::unordered_set<std::string_view>& headers)
 		: port_(port),
 		  callback_(callback),
 		  threads_(threads),
