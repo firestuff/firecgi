@@ -8,11 +8,11 @@ objects = firecgi.o connection.o request.o parse.o
 
 firecgi.a: $(objects)
 	$(MAKE) --directory=firebuf
-	ar rcs $@ $^
+	ar rcs $@ $^ $(addprefix firebuf/,$(shell ar t firebuf/firebuf.a))
 
-example_simple: example_simple.o $(objects)
+example_simple: example_simple.o firecgi.a
 	$(MAKE) --directory=firebuf
-	$(FIRE_CXX) $(FIRE_CXXFLAGS) -o $@ $+ firebuf/firebuf.a $(FIRE_LDLIBS)
+	$(FIRE_CXX) $(FIRE_CXXFLAGS) -o $@ $+ $(FIRE_LDLIBS)
 
 %.o: %.cc *.h Makefile
 	$(FIRE_CXX) $(FIRE_CXXFLAGS) -c -o $@ $<
@@ -27,9 +27,9 @@ afl:
 
 afl_int: connection_afl
 
-connection_afl: connection_afl.o $(objects)
+connection_afl: connection_afl.o firecgi.a
 	$(MAKE) --directory=firebuf
-	$(FIRE_CXX) $(FIRE_CXXFLAGS) -o $@ $+ firebuf/firebuf.a $(FIRE_LDLIBS)
+	$(FIRE_CXX) $(FIRE_CXXFLAGS) -o $@ $+ $(FIRE_LDLIBS)
 
 test: test_connection
 
