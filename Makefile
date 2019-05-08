@@ -6,12 +6,13 @@ all: firecgi.a example_simple
 
 objects = firecgi.o connection.o request.o parse.o
 
-firecgi.a: $(objects)
+_firebuf:
 	$(MAKE) --directory=firebuf
-	ar rcs $@ $^ $(addprefix firebuf/,$(shell ar t firebuf/firebuf.a))
+
+firecgi.a: $(objects) _firebuf
+	ar rcs $@ $(objects) $(addprefix firebuf/,$(shell ar t firebuf/firebuf.a))
 
 example_simple: example_simple.o firecgi.a
-	$(MAKE) --directory=firebuf
 	$(FIRE_CXX) $(FIRE_CXXFLAGS) -o $@ $+ $(FIRE_LDLIBS)
 
 %.o: %.cc *.h Makefile
