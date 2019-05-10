@@ -8,7 +8,7 @@ all: firecgi.a firecgi.o firecgi.so example_simple
 objects = server.o connection.o request.o parse.o
 
 firebuf/firebuf.o:
-	$(MAKE) --directory=firebuf
+	$(MAKE) --directory=firebuf firebuf.o
 
 firecgi.a: $(objects)
 	ar rcs $@ $^
@@ -31,7 +31,7 @@ clean:
 
 afl:
 	$(MAKE) clean
-	FIRE_CXX=afl-g++ $(MAKE) afl_int
+	FIRE_CXX=afl-g++ FIRE_CXXFLAGS="-O3 -std=gnu++2a -fPIC -fPIE" $(MAKE) afl_int
 
 afl_int: connection_afl
 

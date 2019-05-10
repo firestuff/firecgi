@@ -7,7 +7,7 @@ int main(int argc, char* argv[]) {
 	gflags::ParseCommandLineFlags(&argc, &argv, true);
 
 	{
-		firecgi::Connection conn(STDIN_FILENO, {}, [](std::unique_ptr<firecgi::Request> req) { req->End(); }, {});
+		firecgi::Connection conn(STDIN_FILENO, {}, [](firecgi::Request* req) { req->End(); }, {}, 16*1024);
 		static_cast<void>(conn.Read());
 	}
 
