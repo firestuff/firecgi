@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <mutex>
 #include <unordered_map>
 
@@ -22,7 +23,7 @@ class Request {
 	void AddParam(const std::string_view& key, const std::string_view& value);
 	void SetBody(const std::string_view& in);
 
-	const std::string_view& GetParam(const std::string& key);
+	const std::string_view& GetParam(const std::string_view& key);
 	const std::string_view& GetBody();
 
 	void WriteHeader(const std::string_view& name, const std::string_view& value);
@@ -32,6 +33,9 @@ class Request {
 
 	template<typename...Args>
 	void WriteBody(const std::string_view& first, Args... more);
+
+	template<typename T>
+	T InTransaction(const std::function<T()>& callback);
 
   private:
 	Header OutputHeader();
@@ -53,6 +57,12 @@ void Request::WriteBody(const std::string_view& first, Args... more) {
 	std::lock_guard<std::recursive_mutex> l(output_mu_);
 	WriteBody(first);
 	WriteBody(more...);
+}
+
+template<typename T>
+T Request::InTransaction(const std::function<T()>& callback) {
+	std::lock_guard<std::recursive_mutex> l(output_mu_);
+	return callback();
 }
 
 } // namespace firecgi

@@ -33,14 +33,14 @@ uint16_t Request::RequestId() {
 }
 
 void Request::AddParam(const std::string_view& key, const std::string_view& value) {
-	params_.try_emplace(std::string(key), std::string(value));
+	params_.try_emplace(key, value);
 }
 
 void Request::SetBody(const std::string_view& body) {
 	body_ = body;
 }
 
-const std::string_view& Request::GetParam(const std::string& key) {
+const std::string_view& Request::GetParam(const std::string_view& key) {
 	auto iter = params_.find(key);
 	if (iter == params_.end()) {
 		static const std::string_view none;
