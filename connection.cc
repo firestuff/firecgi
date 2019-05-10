@@ -124,8 +124,10 @@ int Connection::Read() {
 					callback_(&request_);
 					buf_.Consume(); // discard data and invalidate pointers
 				} else {
-					std::string_view in(buf_.Read(header->ContentLength()), header->ContentLength());
-					request_.AddIn(in);
+					if (!request_.GetBody().empty()) {
+						LOG(ERROR) << "received multiple stdin records. have you set \"fastcgi_request_buffering on\"?";
+					}
+					request_.SetBody({buf_.Read(header->ContentLength()), header->ContentLength()});
 				}
 			}
 			break;

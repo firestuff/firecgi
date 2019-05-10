@@ -23,7 +23,7 @@ Request::Request(Connection* conn)
 void Request::NewRequest(uint16_t request_id) {
 	request_id_ = request_id;
 	params_.clear();
-	in_.clear();
+	body_ = {};
 	out_buf_.Reset();
 	body_written_ = false;
 }
@@ -36,8 +36,8 @@ void Request::AddParam(const std::string_view& key, const std::string_view& valu
 	params_.try_emplace(std::string(key), std::string(value));
 }
 
-void Request::AddIn(const std::string_view& in) {
-	in_.append(in);
+void Request::SetBody(const std::string_view& body) {
+	body_ = body;
 }
 
 const std::string& Request::GetParam(const std::string& key) {
@@ -47,6 +47,10 @@ const std::string& Request::GetParam(const std::string& key) {
 		return none;
 	}
 	return iter->second;
+}
+
+const std::string_view& Request::GetBody() {
+	return body_;
 }
 
 void Request::WriteHeader(const std::string_view& name, const std::string_view& value) {
