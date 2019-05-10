@@ -54,6 +54,8 @@ const std::string_view& Request::GetBody() {
 }
 
 void Request::WriteHeader(const std::string_view& name, const std::string_view& value) {
+	std::lock_guard<std::mutex> l(output_mu_);
+
 	CHECK(!body_written_);
 	CHECK(out_buf_.Write(name));
 	CHECK(out_buf_.Write(": "));
@@ -62,6 +64,8 @@ void Request::WriteHeader(const std::string_view& name, const std::string_view& 
 }
 
 void Request::WriteBody(const std::string_view& body) {
+	std::lock_guard<std::mutex> l(output_mu_);
+
 	if (!body_written_) {
 		CHECK(out_buf_.Write("\n"));
 		body_written_ = true;
@@ -71,6 +75,8 @@ void Request::WriteBody(const std::string_view& body) {
 }
 
 bool Request::Flush() {
+	std::lock_guard<std::mutex> l(output_mu_);
+
 	std::vector<iovec> vecs;
 
 	auto header = OutputHeader();
@@ -82,12 +88,17 @@ bool Request::Flush() {
 		return false;
 	}
 	out_buf_.Commit();
+	out_buf_.Consume();
 	return true;
 }
 
 bool Request::End() {
-	// Fully empty response not allowed
-	WriteBody("");
+	std::lock_guard<std::mutex> l(output_mu_);
+
+	if (!body_written_) {
+		// Fully empty response not allowed
+		CHECK(out_buf_.Write("\n"));
+	}
 
 	std::vector<iovec> vecs;
 

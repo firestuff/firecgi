@@ -1,5 +1,6 @@
 #pragma once
 
+#include <mutex>
 #include <unordered_map>
 
 #include "firebuf/buffer.h"
@@ -41,6 +42,7 @@ class Request {
 
 	firebuf::Buffer out_buf_;
 	bool body_written_;
+	std::mutex output_mu_;
 };
 
 } // namespace firecgi
