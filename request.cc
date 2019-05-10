@@ -65,13 +65,7 @@ void Request::WriteHeader(const std::string_view& name, const std::string_view& 
 
 void Request::WriteBody(const std::string_view& body) {
 	std::lock_guard<std::mutex> l(output_mu_);
-
-	if (!body_written_) {
-		CHECK(out_buf_.Write("\n"));
-		body_written_ = true;
-	}
-	// TODO: make this able to span multiple packets
-	CHECK(out_buf_.Write(body));
+	WriteBodyLocked(body);
 }
 
 bool Request::Flush() {
@@ -95,10 +89,7 @@ bool Request::Flush() {
 bool Request::End() {
 	std::lock_guard<std::mutex> l(output_mu_);
 
-	if (!body_written_) {
-		// Fully empty response not allowed
-		CHECK(out_buf_.Write("\n"));
-	}
+	WriteBodyLocked("");
 
 	std::vector<iovec> vecs;
 
@@ -127,6 +118,17 @@ iovec Request::OutputVec() {
 
 Header Request::OutputHeader() {
 	return Header(6, request_id_, out_buf_.ReadMaxLen());
+}
+
+void Request::WriteBodyLocked(const std::string_view& body) {
+	CHECK(!output_mu_.try_lock());
+
+	if (!body_written_) {
+		CHECK(out_buf_.Write("\n"));
+		body_written_ = true;
+	}
+	// TODO: make this able to span multiple packets
+	CHECK(out_buf_.Write(body));
 }
 
 } // namespace firecgi
