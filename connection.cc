@@ -9,11 +9,11 @@
 
 namespace firecgi {
 
-Connection::Connection(int sock, const sockaddr_in6& client_addr, const std::function<void(Request*)>& callback, const std::unordered_set<std::string_view>& headers)
+Connection::Connection(int sock, const sockaddr_in6& client_addr, const std::function<void(Request*)>& callback, const std::unordered_set<std::string_view>& headers, int max_request_len)
 		: sock_(sock),
 		  callback_(callback),
 		  headers_(headers),
-		  buf_(sock, max_record_len),
+		  buf_(sock, max_request_len),
 		  request_(this) {
 	char client_addr_str[INET6_ADDRSTRLEN];
 	PCHECK(inet_ntop(AF_INET6, &client_addr.sin6_addr, client_addr_str, sizeof(client_addr_str)));
@@ -122,6 +122,7 @@ int Connection::Read() {
 					// Magic signal for completed request (mirrors the HTTP/1.1 protocol)
 					requests_++;
 					callback_(&request_);
+					buf_.Consume(); // discard data and invalidate pointers
 				} else {
 					std::string_view in(buf_.Read(header->ContentLength()), header->ContentLength());
 					request_.AddIn(in);
@@ -141,7 +142,6 @@ int Connection::Read() {
 		buf_.Commit(); // we've acted on the bytes read so far
 	}
 
-	buf_.Consume();
 	return -1;
 }
 

@@ -44,8 +44,4 @@ struct ParamHeader {
 	uint8_t value_length;
 };
 
-constexpr auto max_content_len = 65535;
-constexpr auto max_padding_len = 255;
-constexpr auto max_record_len = sizeof(Header) + max_content_len + max_padding_len;
-
 } // namespace firecgi

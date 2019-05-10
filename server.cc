@@ -11,11 +11,12 @@
 
 namespace firecgi {
 
-Server::Server(int port, const std::function<void(Request*)>& callback, int threads, const std::unordered_set<std::string_view>& headers)
+Server::Server(int port, const std::function<void(Request*)>& callback, int threads, const std::unordered_set<std::string_view>& headers, int max_request_len)
 		: port_(port),
 		  callback_(callback),
 		  threads_(threads),
-		  headers_(headers) {
+		  headers_(headers),
+		  max_request_len_(max_request_len) {
 	LOG(INFO) << "listening on [::1]:" << port_;
 
 	signal(SIGPIPE, SIG_IGN);
@@ -81,7 +82,7 @@ void Server::NewConn(int listen_sock, int epoll_fd) {
 	PCHECK(setsockopt(client_sock, SOL_TCP, TCP_NODELAY, &flags, sizeof(flags)) == 0);
 
 	{
-		auto *conn = new Connection(client_sock, client_addr, callback_, headers_);
+		auto *conn = new Connection(client_sock, client_addr, callback_, headers_, max_request_len_);
 		struct epoll_event ev{
 			.events = EPOLLIN,
 			.data = {

@@ -18,7 +18,7 @@ template<class T> void AppendVec(const T& obj, std::vector<iovec>* vec) {
 
 Request::Request(Connection* conn)
 		: conn_(conn),
-		  out_buf_(max_record_len) {}
+		  out_buf_(64*1024) {}
 
 void Request::NewRequest(uint16_t request_id) {
 	request_id_ = request_id;
