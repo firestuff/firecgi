@@ -1,8 +1,11 @@
 #include <arpa/inet.h>
+#include <iomanip>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <signal.h>
 #include <sys/epoll.h>
+#include <sys/eventfd.h>
+#include <sys/resource.h>
 #include <sys/socket.h>
 #include <thread>
 
@@ -16,9 +19,11 @@ Server::Server(int port, const std::function<void(Request*)>& callback, int thre
 		  callback_(callback),
 		  threads_(threads),
 		  headers_(headers),
-		  max_request_len_(max_request_len) {
-	LOG(INFO) << "listening on [::1]:" << port_;
+		  max_request_len_(max_request_len),
+		  close_fd_(eventfd(0, 0)) {
+	CHECK_GE(close_fd_, 0);
 
+	LOG(INFO) << "listening on [::1]:" << port_;
 	signal(SIGPIPE, SIG_IGN);
 }
 
@@ -28,6 +33,29 @@ void Server::Serve() {
 		threads.emplace_back([this]() { ServeInt(); });
 	}
 	ServeInt();
+	for (auto& thread : threads) {
+		thread.join();
+	}
+	LOG(INFO) << "all threads shut down";
+}
+
+void Server::Shutdown() {
+	uint64_t shutdown = 1;
+	PCHECK(write(close_fd_, &shutdown, sizeof(shutdown)) == sizeof(shutdown));
+}
+
+namespace {
+Server* shutdown_server = nullptr;
+} // namespace
+
+void Server::RegisterSignalHandlers() {
+	shutdown_server = this;
+	for (auto sig : {SIGINT, SIGTERM}) {
+		signal(sig, [](int signum) {
+			LOG(INFO) << "received " << strsignal(signum);
+			shutdown_server->Shutdown();
+		});
+	}
 }
 
 void Server::ServeInt() {
@@ -36,15 +64,30 @@ void Server::ServeInt() {
 
 	auto listen_sock = NewListenSock();
 
+	char new_conn;
 	{
 		struct epoll_event ev{
 			.events = EPOLLIN,
 			.data = {
-				.ptr = nullptr,
+				.ptr = &new_conn,
 			},
 		};
 		PCHECK(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, listen_sock, &ev) == 0);
 	}
+
+	char shutdown;
+	{
+		struct epoll_event ev{
+			.events = EPOLLIN,
+			.data = {
+				.ptr = &shutdown,
+			},
+		};
+		PCHECK(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, close_fd_, &ev) == 0);
+	}
+
+	std::unordered_set<Connection*> connections;
+	uint64_t requests = 0;
 
 	while (true) {
 		constexpr auto max_events = 256;
@@ -56,13 +99,33 @@ void Server::ServeInt() {
 		PCHECK(num_fd > 0) << "epoll_wait()";
 
 		for (auto i = 0; i < num_fd; ++i) {
-			if (events[i].data.ptr == nullptr) {
-				NewConn(listen_sock, epoll_fd);
+			if (events[i].data.ptr == &new_conn) {
+				connections.insert(CHECK_NOTNULL(NewConn(listen_sock, epoll_fd)));
+			} else if (events[i].data.ptr == &shutdown) {
+				for (auto& conn : connections) {
+					requests += conn->Requests();
+					delete conn;
+				}
+				PCHECK(close(listen_sock) == 0);
+				PCHECK(close(epoll_fd) == 0);
+
+				rusage usage;
+				PCHECK(getrusage(RUSAGE_THREAD, &usage) == 0);
+
+				LOG(INFO) << std::setfill('0')
+					<< "thread shutting down ("
+					<< "handled " << requests << " requests, "
+					<< usage.ru_utime.tv_sec << "." << std::setw(6) << usage.ru_utime.tv_usec << " user seconds, " << std::setw(0)
+					<< usage.ru_stime.tv_sec << "." << std::setw(6) << usage.ru_stime.tv_usec << " system seconds" << std::setw(0)
+					<< ")";
+				return;
 			} else {
 				auto conn = static_cast<Connection*>(events[i].data.ptr);
 				auto fd = conn->Read();
 				if (fd != -1) {
 					PCHECK(epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, nullptr) == 0);
+					requests += conn->Requests();
+					connections.erase(conn);
 					delete conn;
 				}
 			}
@@ -70,7 +133,7 @@ void Server::ServeInt() {
 	}
 }
 
-void Server::NewConn(int listen_sock, int epoll_fd) {
+Connection* Server::NewConn(int listen_sock, int epoll_fd) {
 	sockaddr_in6 client_addr;
 	socklen_t client_addr_len = sizeof(client_addr);
 
@@ -81,8 +144,8 @@ void Server::NewConn(int listen_sock, int epoll_fd) {
 	int flags = 1;
 	PCHECK(setsockopt(client_sock, SOL_TCP, TCP_NODELAY, &flags, sizeof(flags)) == 0);
 
+	auto *conn = new Connection(client_sock, client_addr, callback_, headers_, max_request_len_);
 	{
-		auto *conn = new Connection(client_sock, client_addr, callback_, headers_, max_request_len_);
 		struct epoll_event ev{
 			.events = EPOLLIN,
 			.data = {
@@ -91,6 +154,8 @@ void Server::NewConn(int listen_sock, int epoll_fd) {
 		};
 		PCHECK(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_sock, &ev) == 0);
 	}
+
+	return conn;
 }
 
 int Server::NewListenSock() {

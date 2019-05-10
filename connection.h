@@ -19,6 +19,8 @@ class Connection {
 	[[nodiscard]] int Read();
 	[[nodiscard]] bool Write(const std::vector<iovec>& vecs);
 
+	[[nodiscard]] uint64_t Requests() const;
+
   private:
   	const int sock_;
 	const std::function<void(Request*)>& callback_;

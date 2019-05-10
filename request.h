@@ -18,13 +18,13 @@ class Request {
 
 	void NewRequest(uint16_t request_id);
 
-	uint16_t RequestId();
+	uint16_t RequestId() const;
 
 	void AddParam(const std::string_view& key, const std::string_view& value);
 	void SetBody(const std::string_view& in);
 
-	const std::string_view& GetParam(const std::string_view& key);
-	const std::string_view& GetBody();
+	const std::string_view& GetParam(const std::string_view& key) const;
+	const std::string_view& GetBody() const;
 
 	void WriteHeader(const std::string_view& name, const std::string_view& value);
 	void WriteBody(const std::string_view& body);

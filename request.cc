@@ -28,7 +28,7 @@ void Request::NewRequest(uint16_t request_id) {
 	body_written_ = false;
 }
 
-uint16_t Request::RequestId() {
+uint16_t Request::RequestId() const {
 	return request_id_;
 }
 
@@ -40,7 +40,7 @@ void Request::SetBody(const std::string_view& body) {
 	body_ = body;
 }
 
-const std::string_view& Request::GetParam(const std::string_view& key) {
+const std::string_view& Request::GetParam(const std::string_view& key) const {
 	auto iter = params_.find(key);
 	if (iter == params_.end()) {
 		static const std::string_view none;
@@ -49,7 +49,7 @@ const std::string_view& Request::GetParam(const std::string_view& key) {
 	return iter->second;
 }
 
-const std::string_view& Request::GetBody() {
+const std::string_view& Request::GetBody() const {
 	return body_;
 }
 

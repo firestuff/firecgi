@@ -15,5 +15,6 @@ int main(int argc, char *argv[]) {
 		request->WriteBody("Hello world");
 		request->End();
 	}, FLAGS_threads);
+	server.RegisterSignalHandlers();
 	server.Serve();
 }

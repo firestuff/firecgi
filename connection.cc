@@ -147,4 +147,8 @@ int Connection::Read() {
 	return -1;
 }
 
+uint64_t Connection::Requests() const {
+	return requests_;
+}
+
 } // namespace firecgi
