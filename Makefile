@@ -1,8 +1,9 @@
 FIRE_CXX ?= clang++
-FIRE_CXXFLAGS ?= -O3 -std=gnu++2a -Wall -Werror
+FIRE_CXXFLAGS ?= -O3 -std=gnu++2a -Wall -Werror -Wextra -fPIE -fPIC -fstack-protector-strong -fsanitize=safe-stack -fsanitize=safe-stack
+FIRE_LDFLAGS ?= -fuse-ld=gold -flto -Wl,-z,relro -Wl,-z,now
 FIRE_LDLIBS ?= -lgflags -lglog -lpthread
 
-all: firecgi.a firecgi.o example_simple
+all: firecgi.a firecgi.o firecgi.so example_simple
 
 objects = server.o connection.o request.o parse.o
 
@@ -13,17 +14,20 @@ firecgi.a: $(objects)
 	ar rcs $@ $^
 
 firecgi.o: $(objects) firebuf/firebuf.o
-	ld --relocatable --output=$@ $+
+	gold -z relro -z now -r --output=$@ $+
+
+firecgi.so: $(objects) firebuf/firebuf.o
+	$(FIRE_CXX) $(FIRE_CXXFLAGS) $(FIRE_LDFLAGS) -shared -o $@ $+ $(FIRE_LDFLIBS)
 
 example_simple: example_simple.o firecgi.o
-	$(FIRE_CXX) $(FIRE_CXXFLAGS) -o $@ $+ $(FIRE_LDLIBS)
+	$(FIRE_CXX) $(FIRE_CXXFLAGS) $(FIRE_LDFLAGS) -pie -o $@ $+ $(FIRE_LDLIBS)
 
 %.o: %.cc *.h Makefile
 	$(FIRE_CXX) $(FIRE_CXXFLAGS) -c -o $@ $<
 
 clean:
 	$(MAKE) --directory=firebuf clean
-	rm --force example_simple connection_afl *.o *.a
+	rm --force example_simple connection_afl *.so *.o *.a
 
 afl:
 	$(MAKE) clean
@@ -32,7 +36,7 @@ afl:
 afl_int: connection_afl
 
 connection_afl: connection_afl.o firecgi.o
-	$(FIRE_CXX) $(FIRE_CXXFLAGS) -o $@ $+ $(FIRE_LDLIBS)
+	$(FIRE_CXX) $(FIRE_CXXFLAGS) $(FIRE_LDFLAGS) -pie -o $@ $+ $(FIRE_LDLIBS)
 
 test: test_connection
 
