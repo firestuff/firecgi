@@ -31,12 +31,11 @@ class Request {
 	bool End();
 
 	template<typename...Args>
-	void WriteMany(const std::string_view& first, Args... more);
+	void WriteBody(const std::string_view& first, Args... more);
 
   private:
 	Header OutputHeader();
 	iovec OutputVec();
-	void WriteBodyLocked(const std::string_view& body);
 
 	Connection *conn_;
 	uint16_t request_id_ = 0;
@@ -46,14 +45,14 @@ class Request {
 
 	firebuf::Buffer out_buf_;
 	bool body_written_;
-	std::mutex output_mu_;
+	std::recursive_mutex output_mu_;
 };
 
 template<typename...Args>
-void Request::WriteMany(const std::string_view& first, Args... more) {
-	std::lock_guard<std::mutex> l(output_mu_);
-	WriteBodyLocked(first);
-	WriteMany(std::forward(more)...);
+void Request::WriteBody(const std::string_view& first, Args... more) {
+	std::lock_guard<std::recursive_mutex> l(output_mu_);
+	WriteBody(first);
+	WriteBody(more...);
 }
 
 } // namespace firecgi

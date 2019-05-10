@@ -54,7 +54,7 @@ const std::string_view& Request::GetBody() {
 }
 
 void Request::WriteHeader(const std::string_view& name, const std::string_view& value) {
-	std::lock_guard<std::mutex> l(output_mu_);
+	std::lock_guard<std::recursive_mutex> l(output_mu_);
 
 	CHECK(!body_written_);
 	CHECK(out_buf_.Write(name));
@@ -64,12 +64,17 @@ void Request::WriteHeader(const std::string_view& name, const std::string_view& 
 }
 
 void Request::WriteBody(const std::string_view& body) {
-	std::lock_guard<std::mutex> l(output_mu_);
-	WriteBodyLocked(body);
+	std::lock_guard<std::recursive_mutex> l(output_mu_);
+	if (!body_written_) {
+		CHECK(out_buf_.Write("\n"));
+		body_written_ = true;
+	}
+	// TODO: make this able to span multiple packets
+	CHECK(out_buf_.Write(body));
 }
 
 bool Request::Flush() {
-	std::lock_guard<std::mutex> l(output_mu_);
+	std::lock_guard<std::recursive_mutex> l(output_mu_);
 
 	std::vector<iovec> vecs;
 
@@ -87,9 +92,9 @@ bool Request::Flush() {
 }
 
 bool Request::End() {
-	std::lock_guard<std::mutex> l(output_mu_);
+	std::lock_guard<std::recursive_mutex> l(output_mu_);
 
-	WriteBodyLocked("");
+	WriteBody("");
 
 	std::vector<iovec> vecs;
 
@@ -118,17 +123,6 @@ iovec Request::OutputVec() {
 
 Header Request::OutputHeader() {
 	return Header(6, request_id_, out_buf_.ReadMaxLen());
-}
-
-void Request::WriteBodyLocked(const std::string_view& body) {
-	CHECK(!output_mu_.try_lock());
-
-	if (!body_written_) {
-		CHECK(out_buf_.Write("\n"));
-		body_written_ = true;
-	}
-	// TODO: make this able to span multiple packets
-	CHECK(out_buf_.Write(body));
 }
 
 } // namespace firecgi
