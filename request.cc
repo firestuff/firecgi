@@ -40,10 +40,10 @@ void Request::SetBody(const std::string_view& body) {
 	body_ = body;
 }
 
-const std::string& Request::GetParam(const std::string& key) {
+const std::string_view& Request::GetParam(const std::string& key) {
 	auto iter = params_.find(key);
 	if (iter == params_.end()) {
-		static const std::string none;
+		static const std::string_view none;
 		return none;
 	}
 	return iter->second;
