@@ -20,10 +20,21 @@ Request::Request(Connection* conn)
 		: conn_(conn),
 		  out_buf_(64*1024) {}
 
+Request::~Request() {
+	if (on_close_) {
+		on_close_();
+	}
+}
+
 void Request::NewRequest(uint16_t request_id) {
+	if (on_close_) {
+		on_close_();
+	}
+
 	request_id_ = request_id;
 	params_.clear();
 	body_ = {};
+	on_close_ = nullptr;
 	out_buf_.Reset();
 	body_written_ = false;
 }
@@ -51,6 +62,10 @@ const std::string_view& Request::GetParam(const std::string_view& key) const {
 
 const std::string_view& Request::GetBody() const {
 	return body_;
+}
+
+void Request::OnClose(const std::function<void()>& on_close) {
+	on_close_ = on_close;
 }
 
 void Request::WriteHeader(const std::string_view& name, const std::string_view& value) {

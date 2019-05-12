@@ -15,6 +15,7 @@ class Connection;
 class Request {
   public:
 	Request(Connection *conn);
+	~Request();
 
 	void NewRequest(uint16_t request_id);
 
@@ -25,6 +26,8 @@ class Request {
 
 	const std::string_view& GetParam(const std::string_view& key) const;
 	const std::string_view& GetBody() const;
+
+	void OnClose(const std::function<void()>& callback);
 
 	void WriteHeader(const std::string_view& name, const std::string_view& value);
 	void WriteBody(const std::string_view& body);
@@ -46,6 +49,8 @@ class Request {
 
 	std::unordered_map<std::string_view, std::string_view> params_;
 	std::string_view body_;
+
+	std::function<void()> on_close_;
 
 	firebuf::Buffer out_buf_;
 	bool body_written_;
