@@ -9,10 +9,9 @@
 
 namespace firecgi {
 
-Connection::Connection(int sock, const sockaddr_in6& client_addr, const std::function<void(Request*)>& callback, const std::unordered_set<std::string_view>& headers, int max_request_len)
+Connection::Connection(int sock, const sockaddr_in6& client_addr, const std::function<void(Request*)>& callback, int max_request_len)
 		: sock_(sock),
 		  callback_(callback),
-		  headers_(headers),
 		  buf_(sock, max_request_len),
 		  request_(this) {
 	char client_addr_str[INET6_ADDRSTRLEN];
@@ -104,9 +103,7 @@ int Connection::Read() {
 					}
 					std::string_view value(value_buf, param_header->value_length);
 
-					if (headers_.find(key) != headers_.end()) {
-						request_.AddParam(key, value);
-					}
+					request_.AddParam(key, value);
 				}
 			}
 			break;

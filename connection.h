@@ -13,7 +13,7 @@ namespace firecgi {
 
 class Connection {
   public:
-	Connection(int sock, const sockaddr_in6& client_addr, const std::function<void(Request*)>& callback, const std::unordered_set<std::string_view>& headers, int max_request_len);
+	Connection(int sock, const sockaddr_in6& client_addr, const std::function<void(Request*)>& callback, int max_request_len);
 	~Connection();
 
 	[[nodiscard]] int Read();
@@ -24,7 +24,6 @@ class Connection {
   private:
   	const int sock_;
 	const std::function<void(Request*)>& callback_;
-	const std::unordered_set<std::string_view>& headers_;
 	firebuf::StreamBuffer buf_;
 	Request request_;
 

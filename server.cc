@@ -16,11 +16,10 @@
 
 namespace firecgi {
 
-Server::Server(int port, const std::function<void(Request*)>& callback, int threads, const std::unordered_set<std::string_view>& headers, int max_request_len)
+Server::Server(int port, const std::function<void(Request*)>& callback, int threads, int max_request_len)
 		: port_(port),
 		  callback_(callback),
 		  threads_(threads),
-		  headers_(headers),
 		  max_request_len_(max_request_len),
 		  close_fd_(eventfd(0, 0)) {
 	CHECK_GE(close_fd_, 0);
@@ -140,7 +139,7 @@ Connection* Server::NewConn(int listen_sock, int epoll_fd) {
 	int flags = 1;
 	PCHECK(setsockopt(client_sock, SOL_TCP, TCP_NODELAY, &flags, sizeof(flags)) == 0);
 
-	auto *conn = new Connection(client_sock, client_addr, callback_, headers_, max_request_len_);
+	auto *conn = new Connection(client_sock, client_addr, callback_, max_request_len_);
 	{
 		struct epoll_event ev{
 			.events = EPOLLIN,
