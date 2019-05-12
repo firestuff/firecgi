@@ -9,6 +9,8 @@
 #include <sys/socket.h>
 #include <thread>
 
+#include "fireusage/usage.h"
+
 #include "server.h"
 #include "connection.h"
 
@@ -87,7 +89,9 @@ void Server::ServeInt() {
 	}
 
 	std::unordered_set<Connection*> connections;
-	uint64_t requests = 0;
+
+	fireusage::UsageTracker usage_tracker;
+	usage_tracker.Start();
 
 	while (true) {
 		constexpr auto max_events = 256;
@@ -103,28 +107,20 @@ void Server::ServeInt() {
 				connections.insert(CHECK_NOTNULL(NewConn(listen_sock, epoll_fd)));
 			} else if (events[i].data.ptr == &shutdown) {
 				for (auto& conn : connections) {
-					requests += conn->Requests();
+					usage_tracker.AddEvents(conn->Requests());
 					delete conn;
 				}
+				usage_tracker.Stop();
 				PCHECK(close(listen_sock) == 0);
 				PCHECK(close(epoll_fd) == 0);
-
-				rusage usage;
-				PCHECK(getrusage(RUSAGE_THREAD, &usage) == 0);
-
-				LOG(INFO) << std::setfill('0')
-					<< "thread shutting down ("
-					<< "handled " << requests << " requests, "
-					<< usage.ru_utime.tv_sec << "." << std::setw(6) << usage.ru_utime.tv_usec << " user seconds, " << std::setw(0)
-					<< usage.ru_stime.tv_sec << "." << std::setw(6) << usage.ru_stime.tv_usec << " system seconds" << std::setw(0)
-					<< ")";
+				usage_tracker.Log();
 				return;
 			} else {
 				auto conn = static_cast<Connection*>(events[i].data.ptr);
 				auto fd = conn->Read();
 				if (fd != -1) {
 					PCHECK(epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, nullptr) == 0);
-					requests += conn->Requests();
+					usage_tracker.AddEvents(conn->Requests());
 					connections.erase(conn);
 					delete conn;
 				}

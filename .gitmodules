@@ -1,3 +1,6 @@
 [submodule "firebuf"]
 	path = firebuf
 	url = ../firebuf.git
+[submodule "fireusage"]
+	path = fireusage
+	url = ../fireusage.git

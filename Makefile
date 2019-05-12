@@ -10,13 +10,16 @@ objects = server.o connection.o request.o parse.o
 firebuf/firebuf.o:
 	$(MAKE) --directory=firebuf firebuf.o
 
+fireusage/fireusage.o:
+	$(MAKE) --directory=fireusage fireusage.o
+
 firecgi.a: $(objects)
 	ar rcs $@ $^
 
-firecgi.o: $(objects) firebuf/firebuf.o
+firecgi.o: $(objects) firebuf/firebuf.o fireusage/fireusage.o
 	gold -z relro -z now -r --output=$@ $+
 
-firecgi.so: $(objects) firebuf/firebuf.o
+firecgi.so: $(objects) firebuf/firebuf.o fireusage/fireusage.o
 	$(FIRE_CXX) $(FIRE_CXXFLAGS) $(FIRE_LDFLAGS) -shared -o $@ $+ $(FIRE_LDFLIBS)
 
 example_simple: example_simple.o firecgi.o
@@ -27,6 +30,7 @@ example_simple: example_simple.o firecgi.o
 
 clean:
 	$(MAKE) --directory=firebuf clean
+	$(MAKE) --directory=fireusage clean
 	rm --force example_simple connection_afl *.so *.o *.a
 
 afl:
