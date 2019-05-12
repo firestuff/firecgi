@@ -28,6 +28,10 @@ Server::Server(int port, const std::function<void(Request*)>& callback, int thre
 	signal(SIGPIPE, SIG_IGN);
 }
 
+Server::~Server() {
+	PCHECK(close(close_fd_) == 0);
+}
+
 void Server::Serve() {
 	std::vector<std::thread> threads;
 	for (int i = 0; i < threads_ - 1; ++i) {

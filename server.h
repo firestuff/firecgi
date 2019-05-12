@@ -11,6 +11,8 @@ namespace firecgi {
 class Server {
   public:
 	Server(int port, const std::function<void(Request*)>& callback, int threads=1, int max_request_len=(16*1024));
+	~Server();
+
 	void Serve();
 	void Shutdown();
 	void RegisterSignalHandlers();
