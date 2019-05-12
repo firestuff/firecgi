@@ -112,7 +112,7 @@ void Server::ServeInt() {
 				usage_tracker.Stop();
 				PCHECK(close(listen_sock) == 0);
 				PCHECK(close(epoll_fd) == 0);
-				usage_tracker.Log();
+				usage_tracker.Log("requests");
 				return;
 			} else {
 				auto conn = static_cast<Connection*>(events[i].data.ptr);
